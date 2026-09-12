@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+data/loan_records.db
+data/*.db
+.agents/
+.venv/
+venv/
+env/
