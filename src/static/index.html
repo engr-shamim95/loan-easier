@@ -31,26 +31,31 @@
         </div>
 
         <div class="nav-actions">
-            <div class="system-status" title="API and OCR engines operational">
+            <div class="system-status" title="API and OCR engines operational" style="margin-right: 15px;">
                 <span class="status-dot pulse"></span>
                 <span class="status-label">System Online</span>
             </div>
-            <button type="button" id="btn-quick-sample" class="btn btn-sm btn-sample" title="Generate and test with a simulated loan document scan">
-                <span class="btn-icon">⚡</span> Load Sample Loan
-            </button>
-            <button type="button" id="btn-open-recent" class="btn btn-sm btn-ghost" title="View recent loan records">
-                <span class="btn-icon">📋</span> Recent Records
-            </button>
-            <button type="button" id="btn-open-export" class="btn btn-sm btn-outline" title="Export monthly verified loan reports">
-                <span class="btn-icon">📅</span> Monthly Export
-            </button>
+            <!-- Dropdown Menu -->
+            <div class="dropdown" style="position: relative; display: inline-block;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-main-menu" style="background: var(--surface); color: var(--neutral-900); border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; padding: 6px 12px; border-radius: 6px;">
+                    ⋮ Menu
+                </button>
+                <div class="dropdown-content" id="main-menu-content" style="display: none; position: absolute; right: 0; background-color: var(--surface); min-width: 180px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 100; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 5px;">
+                    <a href="#" id="btn-quick-sample" style="color: var(--neutral-900); padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid var(--border-color);">⚡ Load Sample</a>
+                    <a href="#" id="btn-quick-sample-tabular" style="color: var(--neutral-900); padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid var(--border-color);">📊 Load Tabular</a>
+                    <a href="#" id="btn-open-recent" style="color: var(--neutral-900); padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid var(--border-color);">📋 Recent Records</a>
+                    <a href="#" id="btn-open-export" style="color: var(--neutral-900); padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid var(--border-color);">📅 Monthly Export</a>
+                    <a href="#" id="btn-open-settings" style="color: var(--neutral-900); padding: 12px 16px; text-decoration: none; display: block;">⚙️ Settings</a>
+                </div>
+            </div>
         </div>
     </header>
 
     <!-- Upload Zone Section -->
     <section class="upload-section" id="upload-section">
         <div class="upload-dropzone" id="dropzone">
-            <input type="file" id="file-input" class="file-input" accept=".png,.jpg,.jpeg,.tiff,.bmp,.webp" title="Upload document image">
+            <!-- Hidden File Input -->
+            <input type="file" id="file-input" class="file-input" accept=".png,.jpg,.jpeg,.tiff,.bmp,.webp,.csv,.json,.md" title="Upload document or data file">
             <div class="dropzone-content">
                 <div class="dropzone-icon">
                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -70,6 +75,17 @@
         </div>
     </section>
 
+    <!-- Active File Bar (Hidden by default) -->
+    <div id="active-file-bar" style="display: none; justify-content: space-between; align-items: center; background: var(--surface-color); padding: 10px 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">📄</span>
+            <span id="active-file-name" style="font-weight: 500; color: var(--text-color);">filename.jpg</span>
+        </div>
+        <button type="button" id="btn-new-upload" class="btn btn-outline btn-sm">
+            <span class="btn-icon">＋</span> Upload New File
+        </button>
+    </div>
+
     <!-- Main Split-Screen HITL Workspace -->
     <main class="workspace-container">
         <div class="split-screen" id="split-screen">
@@ -77,42 +93,38 @@
             <!-- Left Pane: Document Viewer -->
             <section class="pane viewer-pane" id="viewer-pane">
                 <div class="pane-header">
-                    <div class="pane-title-group">
+                    <button type="button" id="btn-toggle-viewer" class="btn btn-sm btn-primary" style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3);" title="Toggle Document Viewer">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                    </button>
+                        <div class="pane-title-group">
                         <h2 class="pane-title">
                             <span class="pane-icon">🔍</span> Document Inspection
                         </h2>
                         <span id="viewer-filename" class="file-badge">No document active</span>
                     </div>
 
-                    <!-- Viewer Toolbar -->
-                    <div class="viewer-toolbar" id="viewer-toolbar">
-                        <button type="button" id="btn-zoom-in" class="tool-btn" title="Zoom In (+)">
-                            <span class="tool-icon">+</span>
-                        </button>
-                        <button type="button" id="btn-zoom-out" class="tool-btn" title="Zoom Out (-)">
-                            <span class="tool-icon">&minus;</span>
-                        </button>
-                        <button type="button" id="btn-zoom-fit" class="tool-btn" title="Fit to View">
-                            <span>Fit</span>
-                        </button>
-                        <button type="button" id="btn-zoom-actual" class="tool-btn" title="100% Zoom">
-                            <span>1:1</span>
-                        </button>
-                        <button type="button" id="btn-rotate" class="tool-btn" title="Rotate Clockwise 90 deg">
-                            <span>↻ 90°</span>
-                        </button>
-                        <button type="button" id="btn-pan-mode" class="tool-btn active" title="Toggle Pan / Drag Mode">
-                            <span>✋ Pan</span>
-                        </button>
-                        <button type="button" id="btn-reset-view" class="tool-btn" title="Reset View Transform">
-                            <span>Reset</span>
-                        </button>
-                        <span id="zoom-scale-text" class="scale-indicator">100%</span>
-                    </div>
                 </div>
 
                 <!-- Document Viewport -->
-                <div class="viewport-container" id="viewport-container">
+                <div class="viewport-container" id="viewport-container" style="position: relative;">
+                    <!-- Floating Viewer Toolbar -->
+                    <div class="viewer-toolbar" id="viewer-toolbar" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 30px; padding: 6px 12px; display: flex; gap: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 50; align-items: center;">
+                        <button type="button" id="btn-zoom-in" class="tool-btn" title="Zoom In (+)" style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; transition: background 0.2s;">
+                            <span class="tool-icon">+</span>
+                        </button>
+                        <button type="button" id="btn-zoom-out" class="tool-btn" title="Zoom Out (-)" style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; transition: background 0.2s;">
+                            <span class="tool-icon">&minus;</span>
+                        </button>
+                        <div style="width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 4px;"></div>
+                        <button type="button" id="btn-zoom-fit" class="tool-btn" title="Fit to View" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; background: transparent; border: none; cursor: pointer;">Fit</button>
+                        <button type="button" id="btn-zoom-actual" class="tool-btn" title="100% Zoom" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; background: transparent; border: none; cursor: pointer;">1:1</button>
+                        <div style="width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 4px;"></div>
+                        <button type="button" id="btn-rotate" class="tool-btn" title="Rotate Clockwise 90 deg" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; background: transparent; border: none; cursor: pointer;">↻ 90°</button>
+                        <button type="button" id="btn-pan-mode" class="tool-btn active" title="Toggle Pan / Drag Mode" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; background: transparent; border: none; cursor: pointer;">✋ Pan</button>
+                        <button type="button" id="btn-reset-view" class="tool-btn" title="Reset View Transform" style="padding: 4px 8px; border-radius: 12px; font-size: 12px; background: transparent; border: none; cursor: pointer;">Reset</button>
+                        <span id="zoom-scale-text" class="scale-indicator" style="font-size: 12px; font-weight: bold; color: var(--text-muted); margin-left: 8px;">100%</span>
+                    </div>
+
                     <!-- Empty Placeholder State -->
                     <div class="viewport-empty" id="viewport-empty">
                         <div class="empty-graphic">
@@ -145,200 +157,371 @@
                 <div class="pane-header">
                     <div class="pane-title-group">
                         <h2 class="pane-title">
-                            <span class="pane-icon">✍️</span> Verification Form
+                            <span class="pane-icon" id="pane-header-icon">✍️</span>
+                            <span id="pane-header-text">Verification Workspace</span>
                         </h2>
                         <span id="verification-state-badge" class="state-badge state-awaiting">Awaiting Document</span>
                     </div>
+
+                    <!-- Dual Mode Switcher Tabs -->
+                    <div class="view-mode-tabs" id="view-mode-tabs">
+                        <button type="button" id="tab-batch-grid" class="view-tab" title="Switch to Tabular Data Grid">
+                            <span class="tab-icon">📊</span> Batch Grid <span id="tab-grid-count-badge" class="tab-counter-badge">0</span>
+                        </button>
+                        <button type="button" id="tab-single-form" class="view-tab active" title="Switch to Single Record Form">
+                            <span class="tab-icon">📄</span> Single Record
+                        </button>
+                    </div>
+
                     <div class="pane-meta">
                         <span id="record-id-badge" class="record-id-tag">Record: None</span>
                     </div>
                 </div>
 
                 <div class="form-content">
-                    <!-- Status Banner -->
-                    <div class="status-banner" id="status-banner">
-                        <div class="status-row">
-                            <div class="engine-info">
-                                <span class="meta-label">OCR Engine:</span>
-                                <span id="engine-badge" class="badge badge-neutral">Not Processed</span>
+                    <!-- View 1: Single Record Form Container -->
+                    <div id="single-form-container" class="form-pane-container">
+                        <div id="single-record-view" class="mode-view-pane">
+                        <!-- Status Banner -->
+                        <div class="status-banner" id="status-banner">
+                            <div class="status-row">
+                                <div class="engine-info">
+                                    <span class="meta-label">OCR Engine:</span>
+                                    <span id="engine-badge" class="badge badge-neutral">Not Processed</span>
+                                </div>
+                                <div class="confidence-meter-container">
+                                    <div class="confidence-header">
+                                        <span class="meta-label">Overall Document Confidence:</span>
+                                        <span id="overall-confidence-score" class="confidence-value">--%</span>
+                                    </div>
+                                    <div class="confidence-bar-bg">
+                                        <div id="overall-confidence-bar" class="confidence-bar-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="confidence-meter-container">
-                                <div class="confidence-header">
-                                    <span class="meta-label">Overall Document Confidence:</span>
-                                    <span id="overall-confidence-score" class="confidence-value">--%</span>
+
+                            <!-- Fallback Alert Box (Shown only if fallback triggered) -->
+                            <div id="fallback-alert" class="fallback-alert" style="display: none;">
+                                <div class="alert-icon">⚠️</div>
+                                <div class="alert-body">
+                                    <strong>Automatic OCR Failover Triggered</strong>
+                                    <p id="fallback-reason-text">Primary Google Cloud Vision API was unavailable. Processing completed seamlessly using local Tesseract OCR engine.</p>
                                 </div>
-                                <div class="confidence-bar-bg">
-                                    <div id="overall-confidence-bar" class="confidence-bar-fill" style="width: 0%;"></div>
-                                </div>
+                            </div>
+
+                            <div class="instruction-banner">
+                                <span class="info-icon">ℹ️</span>
+                                <span>Fields with confidence score <strong>&lt; 80%</strong> are highlighted in amber/red with a warning badge. Review and edit before verifying.</span>
                             </div>
                         </div>
 
-                        <!-- Fallback Alert Box (Shown only if fallback triggered) -->
-                        <div id="fallback-alert" class="fallback-alert" style="display: none;">
-                            <div class="alert-icon">⚠️</div>
-                            <div class="alert-body">
-                                <strong>Automatic OCR Failover Triggered</strong>
-                                <p id="fallback-reason-text">Primary Google Cloud Vision API was unavailable. Processing completed seamlessly using local Tesseract OCR engine.</p>
+                        <!-- Editable Form -->
+                        <form id="loan-verification-form" class="verification-form" novalidate>
+                            
+                            <!-- Field 1: Serial Number -->
+                            <div class="form-group" id="group-serial-number">
+                                <div class="field-header">
+                                    <label for="input-serial-number" class="field-label">
+                                        1. Serial Number <span class="required-star">*</span>
+                                    </label>
+                                    <span id="badge-serial-number" class="confidence-badge">
+                                        <!-- Dynamic badge -->
+                                    </span>
+                                </div>
+                                <div class="input-wrapper">
+                                    <input type="text" 
+                                           id="input-serial-number" 
+                                           name="serial_number" 
+                                           class="form-control font-mono" 
+                                           placeholder="e.g. LN-2026-9042" 
+                                           required 
+                                           autocomplete="off">
+                                </div>
+                                <p class="field-hint">Unique loan identifier (alphanumeric, e.g. LN-YYYY-XXXX)</p>
                             </div>
-                        </div>
 
-                        <div class="instruction-banner">
-                            <span class="info-icon">ℹ️</span>
-                            <span>Fields with confidence score <strong>&lt; 80%</strong> are highlighted in amber/red with a warning badge. Review and edit before verifying.</span>
-                        </div>
+                            <!-- Field 2: Borrower Legal Name -->
+                            <div class="form-group" id="group-name">
+                                <div class="field-header">
+                                    <label for="input-name" class="field-label" id="label-input-name">
+                                        2. Borrower Name <span class="required-star">*</span>
+                                    </label>
+                                    <span id="badge-name" class="confidence-badge">
+                                        <!-- Dynamic badge -->
+                                    </span>
+                                </div>
+                                <div class="input-wrapper">
+                                    <input type="text" 
+                                           id="input-name" 
+                                           name="name" 
+                                           class="form-control" 
+                                           placeholder="e.g. Marcus Vance" 
+                                           required 
+                                           autocomplete="off">
+                                </div>
+                                <p class="field-hint">Full legal name of the borrower</p>
+                            </div>
+
+                            <!-- Field 3: Mobile Number -->
+                            <div class="form-group" id="group-mobile">
+                                <div class="field-header">
+                                    <label for="input-mobile" class="field-label">
+                                        3. Mobile Number <span class="required-star">*</span>
+                                    </label>
+                                    <span id="badge-mobile" class="confidence-badge">
+                                        <!-- Dynamic badge -->
+                                    </span>
+                                </div>
+                                <div class="input-wrapper">
+                                    <input type="text" 
+                                           id="input-mobile" 
+                                           name="mobile" 
+                                           class="form-control font-mono" 
+                                           placeholder="e.g. +1 (555) 234-5678" 
+                                           required 
+                                           autocomplete="off">
+                                </div>
+                                <p class="field-hint">Contact phone number (10-15 digits)</p>
+                            </div>
+
+                            <!-- Field 4: Address -->
+                            <div class="form-group" id="group-address">
+                                <div class="field-header">
+                                    <label for="input-address" class="field-label">
+                                        4. Address <span class="required-star">*</span>
+                                    </label>
+                                    <span id="badge-address" class="confidence-badge">
+                                        <!-- Dynamic badge -->
+                                    </span>
+                                </div>
+                                <div class="input-wrapper">
+                                    <textarea id="input-address" 
+                                              name="address" 
+                                              class="form-control" 
+                                              rows="3" 
+                                              placeholder="e.g. 742 Evergreen Terrace, Springfield, IL 62704" 
+                                              required></textarea>
+                                </div>
+                                <p class="field-hint">Full residential or mailing address</p>
+                            </div>
+
+                            <!-- Field 5: Loan Amount -->
+                            <div class="form-group" id="group-amount">
+                                <div class="field-header">
+                                    <label for="input-amount" class="field-label" id="label-input-amount">
+                                        5. Loan Amount (৳) <span class="required-star">*</span>
+                                    </label>
+                                    <span id="badge-amount" class="confidence-badge">
+                                        <!-- Dynamic badge -->
+                                    </span>
+                                </div>
+                                <div class="input-wrapper currency-input-wrapper">
+                                    <span class="currency-symbol">৳</span>
+                                    <input type="number" 
+                                           step="0.01" 
+                                           min="0.01" 
+                                           id="input-amount" 
+                                           name="amount" 
+                                           class="form-control font-mono with-prefix" 
+                                           placeholder="25000.00" 
+                                           required>
+                                </div>
+                                <p class="field-hint">Approved principal amount (greater than 0)</p>
+                            </div>
+
+                            <!-- Form Action Buttons -->
+                            <div class="form-actions">
+                                <button type="submit" id="btn-save-verify" class="btn btn-primary btn-lg" disabled>
+                                    <span class="btn-icon">✓</span>
+                                    <span>Save & Verify Record</span>
+                                </button>
+
+                                <button type="button" id="btn-download-pdf" class="btn btn-secondary btn-lg" disabled>
+                                    <span class="btn-icon">📄</span>
+                                    <span>Download Loan Agreement (PDF)</span>
+                                </button>
+
+                                <button type="button" id="btn-reset-form" class="btn btn-ghost" disabled title="Reset inputs to raw extracted OCR values">
+                                    <span class="btn-icon">↺</span> Reset
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Telemetry & Raw Text Collapsible Accordion -->
+                        <details class="telemetry-details" id="telemetry-details">
+                            <summary class="telemetry-summary">
+                                <span>View Raw OCR Extraction Telemetry</span>
+                                <span class="toggle-icon">▾</span>
+                            </summary>
+                            <div class="telemetry-body">
+                                <div class="telemetry-meta" id="telemetry-meta">
+                                    <div><strong>Audit Timestamp:</strong> <span id="telemetry-time">--</span></div>
+                                    <div><strong>Image Archive:</strong> <span id="telemetry-imgpath">--</span></div>
+                                </div>
+                                <label class="telemetry-label">Raw Text Detected:</label>
+                                <pre id="telemetry-raw-text" class="raw-text-box">(No extraction performed yet)</pre>
+                            </div>
+                        </details>
+                    </div>
                     </div>
 
-                    <!-- Editable Form -->
-                    <form id="loan-verification-form" class="verification-form" novalidate>
-                        
-                        <!-- Field 1: Serial Number -->
-                        <div class="form-group" id="group-serial-number">
-                            <div class="field-header">
-                                <label for="input-serial-number" class="field-label">
-                                    1. Serial Number <span class="required-star">*</span>
-                                </label>
-                                <span id="badge-serial-number" class="confidence-badge">
-                                    <!-- Dynamic badge -->
-                                </span>
+                    <!-- View 2: Batch Tabular Data Grid Container -->
+                    <div id="data-grid-container" class="data-grid-pane-container" style="display: none;">
+                    <div id="batch-grid-view" class="mode-view-pane">
+                        <!-- Batch Status & Summary Banner -->
+                        <div id="batch-summary-bar" class="batch-summary-bar">
+                        <div class="status-banner batch-status-banner" id="batch-status-banner">
+                            <div class="batch-summary-cards">
+                                <div class="summary-metric-card">
+                                    <span class="metric-label">Total Records (মোট)</span>
+                                    <span class="metric-value font-mono" id="batch-stat-records">0</span>
+                                </div>
+                                <div class="summary-metric-card">
+                                    <span class="metric-label">Total Amount (সর্বমোট)</span>
+                                    <span class="metric-value font-mono text-primary" id="batch-stat-amount">৳ 0.00</span>
+                                </div>
+                                <div class="summary-metric-card">
+                                    <span class="metric-label">Review Needed (যাচাই)</span>
+                                    <span class="metric-value font-mono text-warning" id="batch-stat-low-conf">0</span>
+                                </div>
+                                <div class="summary-metric-card">
+                                    <span class="metric-label">OCR Engine</span>
+                                    <span class="metric-value badge badge-neutral" id="batch-engine-badge">Not Processed</span>
+                                </div>
                             </div>
-                            <div class="input-wrapper">
-                                <input type="text" 
-                                       id="input-serial-number" 
-                                       name="serial_number" 
-                                       class="form-control font-mono" 
-                                       placeholder="e.g. LN-2026-9042" 
-                                       required 
-                                       autocomplete="off">
+
+                            <!-- Fallback Alert Box (Shown only if fallback triggered) -->
+                            <div id="batch-fallback-alert" class="fallback-alert" style="display: none;">
+                                <div class="alert-icon">⚠️</div>
+                                <div class="alert-body">
+                                    <strong>Automatic OCR Failover Triggered</strong>
+                                    <p id="batch-fallback-reason-text">Primary Google Cloud Vision API was unavailable. Processing completed seamlessly using local Tesseract OCR engine.</p>
+                                </div>
                             </div>
-                            <p class="field-hint">Unique loan identifier (alphanumeric, e.g. LN-YYYY-XXXX)</p>
+
+                            <div class="instruction-banner">
+                                <span class="info-icon">ℹ️</span>
+                                <span>Cells with confidence score <strong>&lt; 80%</strong> are highlighted in amber/red with a warning badge. Click any cell to edit inline. Edits clear warnings, mark cells as verified (✏️), and automatically update batch statistics.</span>
+                            </div>
+                        </div>
                         </div>
 
-                        <!-- Field 2: Borrower Legal Name -->
-                        <div class="form-group" id="group-name">
-                            <div class="field-header">
-                                <label for="input-name" class="field-label">
-                                    2. Borrower Name <span class="required-star">*</span>
-                                </label>
-                                <span id="badge-name" class="confidence-badge">
-                                    <!-- Dynamic badge -->
-                                </span>
+                        <!-- Grid Controls Toolbar -->
+                        <div class="grid-toolbar">
+                            <div class="grid-toolbar-left">
+                                <button type="button" id="btn-add-grid-row" class="btn btn-primary btn-sm">
+                                    <span class="btn-icon">➕</span> Add Row (নতুন সারি)
+                                </button>
+                                <button type="button" id="btn-reset-batch" class="btn btn-ghost btn-sm" title="Reset grid to original extracted values">
+                                    <span class="btn-icon">↺</span> Reset Grid
+                                </button>
                             </div>
-                            <div class="input-wrapper">
-                                <input type="text" 
-                                       id="input-name" 
-                                       name="name" 
-                                       class="form-control" 
-                                       placeholder="e.g. Marcus Vance" 
-                                       required 
-                                       autocomplete="off">
+                            <div class="grid-toolbar-right">
+                                <span id="grid-status-info" class="grid-status-info">0 records loaded</span>
                             </div>
-                            <p class="field-hint">Full legal name of the borrower</p>
                         </div>
 
-                        <!-- Field 3: Mobile Number -->
-                        <div class="form-group" id="group-mobile">
-                            <div class="field-header">
-                                <label for="input-mobile" class="field-label">
-                                    3. Mobile Number <span class="required-star">*</span>
-                                </label>
-                                <span id="badge-mobile" class="confidence-badge">
-                                    <!-- Dynamic badge -->
-                                </span>
-                            </div>
-                            <div class="input-wrapper">
-                                <input type="text" 
-                                       id="input-mobile" 
-                                       name="mobile" 
-                                       class="form-control font-mono" 
-                                       placeholder="e.g. +1 (555) 234-5678" 
-                                       required 
-                                       autocomplete="off">
-                            </div>
-                            <p class="field-hint">Contact phone number (10-15 digits)</p>
+                        <!-- Scrollable Data Grid Table -->
+                        <div class="grid-scroll-wrapper">
+                            <table id="batch-grid-table" class="data-grid-table">
+                                <thead>
+                                    <tr>
+                                        <th class="col-sl">SL / ক্রমিক নং</th>
+                                        <th class="col-name" id="th-col-name">Borrower Name / নাম <span class="required-star">*</span></th>
+                                        <th class="col-mobile">Mobile / মোবাইল <span class="required-star">*</span></th>
+                                        <th class="col-address">Address / ঠিকানা <span class="required-star">*</span></th>
+                                        <th class="col-amount" id="th-col-amount">Amount / পরিমাণ ($) <span class="required-star">*</span></th>
+                                        <th class="col-actions">Actions / অ্যাকশন</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batch-grid-tbody">
+                                    <tr id="grid-empty-row">
+                                        <td colspan="6" class="text-center py-4 text-muted">No records in batch. Click "+ Add Row" or upload a tabular document scan.</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot id="batch-grid-tfoot">
+                                    <tr>
+                                        <td colspan="4" class="text-right font-bold tfoot-label">TOTAL / সর্বমোট:</td>
+                                        <td class="font-mono font-bold tfoot-amount" id="grid-footer-total-amount">৳ 0.00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
 
-                        <!-- Field 4: Address -->
-                        <div class="form-group" id="group-address">
-                            <div class="field-header">
-                                <label for="input-address" class="field-label">
-                                    4. Address <span class="required-star">*</span>
-                                </label>
-                                <span id="badge-address" class="confidence-badge">
-                                    <!-- Dynamic badge -->
-                                </span>
+                        <!-- Batch Actions Footer -->
+                        <div class="batch-actions-footer">
+                            <div class="batch-primary-actions">
+                                <button type="button" id="btn-save-batch" class="btn btn-primary btn-lg" disabled>
+                                    <span class="btn-icon">✓</span>
+                                    <span>Verify & Save Batch</span>
+                                </button>
                             </div>
-                            <div class="input-wrapper">
-                                <textarea id="input-address" 
-                                          name="address" 
-                                          class="form-control" 
-                                          rows="3" 
-                                          placeholder="e.g. 742 Evergreen Terrace, Springfield, IL 62704" 
-                                          required></textarea>
+
+                            <div class="batch-export-toolbar">
+                                <span class="export-label">Batch Exports:</span>
+                                <button type="button" id="btn-export-batch-csv" class="btn btn-secondary btn-sm" disabled title="Download RFC 4180 CSV with UTF-8 BOM">
+                                    <span class="btn-icon">📄</span> CSV
+                                </button>
+                                <button type="button" id="btn-export-batch-excel" class="btn btn-secondary btn-sm" disabled title="Download styled Excel (.xlsx) workbook">
+                                    <span class="btn-icon">📊</span> Excel
+                                </button>
+                                <button type="button" id="btn-export-batch-pdf" class="btn btn-secondary btn-sm" disabled title="Download combined multi-page PDF agreement">
+                                    <span class="btn-icon">📑</span> Combined PDF
+                                </button>
+                                <button type="button" id="btn-export-batch-zip" class="btn btn-secondary btn-sm" disabled title="Download ZIP archive of individual agreement PDFs">
+                                    <span class="btn-icon">📦</span> ZIP Archive
+                                </button>
                             </div>
-                            <p class="field-hint">Full residential or mailing address</p>
                         </div>
 
-                        <!-- Field 5: Loan Amount -->
-                        <div class="form-group" id="group-amount">
-                            <div class="field-header">
-                                <label for="input-amount" class="field-label">
-                                    5. Loan Amount ($) <span class="required-star">*</span>
-                                </label>
-                                <span id="badge-amount" class="confidence-badge">
-                                    <!-- Dynamic badge -->
-                                </span>
+                        <!-- Batch Telemetry Accordion -->
+                        <details class="telemetry-details" id="batch-telemetry-details">
+                            <summary class="telemetry-summary">
+                                <span>View Tabular Batch OCR Extraction Telemetry</span>
+                                <span class="toggle-icon">▾</span>
+                            </summary>
+                            <div class="telemetry-body">
+                                <div class="telemetry-meta">
+                                    <div><strong>Batch ID:</strong> <span id="batch-telemetry-id">--</span></div>
+                                    <div><strong>Execution Time:</strong> <span id="batch-telemetry-time">--</span> ms</div>
+                                    <div><strong>Image Archive:</strong> <span id="batch-telemetry-imgpath">--</span></div>
+                                </div>
+                                <label class="telemetry-label">Raw Tabular Text Extracted:</label>
+                                <pre id="batch-telemetry-raw-text" class="raw-text-box">(No tabular extraction performed yet)</pre>
                             </div>
-                            <div class="input-wrapper currency-input-wrapper">
-                                <span class="currency-symbol">$</span>
-                                <input type="number" 
-                                       step="0.01" 
-                                       min="0.01" 
-                                       id="input-amount" 
-                                       name="amount" 
-                                       class="form-control font-mono with-prefix" 
-                                       placeholder="25000.00" 
-                                       required>
-                            </div>
-                            <p class="field-hint">Approved principal amount (greater than 0)</p>
-                        </div>
-
-                        <!-- Form Action Buttons -->
-                        <div class="form-actions">
-                            <button type="submit" id="btn-save-verify" class="btn btn-primary btn-lg" disabled>
-                                <span class="btn-icon">✓</span>
-                                <span>Save & Verify Record</span>
-                            </button>
-
-                            <button type="button" id="btn-download-pdf" class="btn btn-secondary btn-lg" disabled>
-                                <span class="btn-icon">📄</span>
-                                <span>Download Loan Agreement (PDF)</span>
-                            </button>
-
-                            <button type="button" id="btn-reset-form" class="btn btn-ghost" disabled title="Reset inputs to raw extracted OCR values">
-                                <span class="btn-icon">↺</span> Reset
-                            </button>
-                        </div>
-                    </form>
-
-                    <!-- Telemetry & Raw Text Collapsible Accordion -->
-                    <details class="telemetry-details" id="telemetry-details">
-                        <summary class="telemetry-summary">
-                            <span>View Raw OCR Extraction Telemetry</span>
-                            <span class="toggle-icon">▾</span>
-                        </summary>
-                        <div class="telemetry-body">
-                            <div class="telemetry-meta" id="telemetry-meta">
-                                <div><strong>Audit Timestamp:</strong> <span id="telemetry-time">--</span></div>
-                                <div><strong>Image Archive:</strong> <span id="telemetry-imgpath">--</span></div>
-                            </div>
-                            <label class="telemetry-label">Raw Text Detected:</label>
-                            <pre id="telemetry-raw-text" class="raw-text-box">(No extraction performed yet)</pre>
-                        </div>
-                    </details>
+                        </details>
+                    </div>
+                    </div>
                 </div>
             </section>
         </div>
     </main>
+
+    <!-- Modal: Settings -->
+    <div class="modal-backdrop" id="modal-settings-backdrop" style="display: none;">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+            <div class="modal-header">
+                <h3 class="modal-title" id="settings-title">Institution Settings</h3>
+                <button type="button" id="btn-close-settings-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="input-inst-name" class="modal-label">Institution Name (Lender):</label>
+                    <input type="text" id="input-inst-name" class="form-control" placeholder="e.g. Loan Easier">
+                </div>
+                <div class="form-group">
+                    <label for="input-inst-address" class="modal-label">Institution Address:</label>
+                    <input type="text" id="input-inst-address" class="form-control" placeholder="e.g. Dhaka, Bangladesh">
+                </div>
+                <p class="field-hint">These details will be dynamically injected into generated PDF agreements and summaries.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+                <button type="button" id="btn-cancel-settings-modal" class="btn btn-ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Monthly Export -->
     <div class="modal-backdrop" id="modal-export-backdrop" style="display: none;">
@@ -351,6 +534,13 @@
                 <button type="button" id="btn-close-export-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div class="modal-form-group">
+                    <label for="export-project-type" class="modal-label">Project Type:</label>
+                    <select id="export-project-type" class="form-control">
+                        <option value="loan">Loan Program (ঋণ বিতরণ কর্মসূচি)</option>
+                        <option value="training">Sewing Training Allowance (সেলাই প্রশিক্ষণ ভাতা)</option>
+                    </select>
+                </div>
                 <div class="modal-form-group">
                     <label for="export-month-input" class="modal-label">Target Month (YYYY-MM):</label>
                     <input type="month" id="export-month-input" class="form-control">
@@ -413,6 +603,24 @@
                     <span class="btn-icon">🔄</span> Refresh List
                 </button>
                 <button type="button" id="btn-cancel-recent-modal" class="btn btn-ghost">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Project Selection (Before Upload) -->
+    <div class="modal-backdrop" id="modal-project-selection" style="display: none; align-items: center; justify-content: center;">
+        <div class="modal-card" style="max-width: 400px; text-align: center; padding: 30px;">
+            <div class="modal-header" style="justify-content: center; border-bottom: none;">
+                <h3 class="modal-title" style="font-size: 20px; color: var(--text-color);">What type of document is this?</h3>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <button type="button" class="btn btn-primary btn-lg" id="btn-select-proj-loan" style="width: 100%; padding: 15px; justify-content: center;">
+                    <span class="btn-icon">💰</span> Loan Program (ঋণ বিতরণ কর্মসূচি)
+                </button>
+                <button type="button" class="btn btn-secondary btn-lg" id="btn-select-proj-training" style="width: 100%; padding: 15px; justify-content: center;">
+                    <span class="btn-icon">🧵</span> Sewing Training (সেলাই প্রশিক্ষণ ভাতা)
+                </button>
+                <button type="button" class="btn btn-ghost" id="btn-cancel-proj-selection" style="margin-top: 10px;">Cancel Upload</button>
             </div>
         </div>
     </div>

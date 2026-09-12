@@ -11,13 +11,15 @@ This software is a Human-in-the-Loop (HITL) OCR-based data entry system for loan
 - **Export Engine:** ReportLab Platypus (PDF generation) and RFC 4180 standard CSV exporter.
 
 ## 3. Key Features
-- **Document Ingestion:** Accepts PNG, JPG, TIFF, BMP, WebP (up to 15MB) with magic-byte validation.
+- **Multi-Project Support:** Unified architecture supporting 'Loan Program' (ঋণ বিতরণ) and 'Sewing Training' (সেলাই প্রশিক্ষণ) with dynamic label switching and distinct data exports.
+- **Document Ingestion:** Accepts PNG, JPG, TIFF, BMP, WebP, CSV, JSON, MD (up to 15MB) with magic-byte validation.
 - **Dual OCR Pipeline:** Automatically falls back to Tesseract if GCP Vision fails (e.g., quota limits, network issues).
-- **HITL Split-Screen UI:** 
-  - Left Panel: Document viewer with pan, zoom, fit-to-view, and rotate capabilities.
-  - Right Panel: Editable verification form.
+- **HITL Verification Workspace:** 
+  - **Single Record Form / Batch Grid:** Supports both single document verification and tabular batch processing (from CSV/JSON files).
+  - **Dynamic UI:** Intelligent upload dropzone that shrinks on successful upload, floating glassmorphism image toolbar, dropdown '⋮ Menu', sticky action footers, and automatic responsive layout stacking.
+  - **Keyboard Shortcuts:** `Ctrl+S` quick save for rapid data entry.
 - **Confidence Highlighting:** Fields with OCR confidence scores < 0.80 are visually highlighted (red/amber borders) to demand human review.
-- **Data Persistence & Export:** Saves verified records atomically. Can export individual records as PDFs (loan agreements) and aggregated records as CSV/Excel files (monthly reports).
+- **Data Persistence & Export:** Saves verified records atomically. Can export individual records as PDFs and aggregated records as CSV/Excel/ZIP grouped by `project_type`.
 
 ## 4. Directory Structure
 ```

@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from src.config import UPLOADS_DIR, BASE_DIR
 from src.api.routes_ocr import router as ocr_router
 from src.api.routes_loans import router as loans_router
+from src.api.routes_batches import router as batches_router
 from src.api.routes_export import export_router, loans_pdf_router
 from src.db.schema import init_db
 
@@ -37,6 +38,7 @@ def create_app() -> FastAPI:
     # Register Routers
     app.include_router(ocr_router)
     app.include_router(loans_router)
+    app.include_router(batches_router)
     app.include_router(loans_pdf_router)
     app.include_router(export_router)
 

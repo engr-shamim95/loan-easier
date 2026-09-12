@@ -103,6 +103,26 @@ def generate_all_fixtures() -> None:
     corrupted_path = FIXTURES_DIR / "corrupted_image.png"
     corrupted_path.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDRcorruptedcontentgarbagebytes")
 
+    # 7. Tabular mock document (3 rows standard)
+    tab_img = create_tabular_loan_document_image(num_rows=3, is_low_conf=False)
+    tab_img_path = FIXTURES_DIR / "tabular_loan_document_3rows.png"
+    tab_img.save(tab_img_path, format="PNG")
+
+    # 8. Tabular mock document with low confidence cell (< 0.80)
+    tab_low_img = create_tabular_loan_document_image(num_rows=3, is_low_conf=True)
+    tab_low_path = FIXTURES_DIR / "tabular_loan_document_low_conf.png"
+    tab_low_img.save(tab_low_path, format="PNG")
+
+def create_tabular_loan_document_image(
+    num_rows: int = 3,
+    is_low_conf: bool = False,
+    headers: list = None,
+) -> Image.Image:
+    """Generate a clean synthetic tabular loan document image with Bengali headers, grid lines, and rows."""
+    from tests.mock_tabular_fixtures import create_mock_tabular_image, generate_tabular_loan_data
+    rows_data = generate_tabular_loan_data(num_rows=num_rows, low_conf_index=1 if is_low_conf else -1)
+    return create_mock_tabular_image(rows_data=rows_data, headers=headers, is_low_conf_doc=is_low_conf)
+
 def get_fixture_path(filename: str) -> Path:
     """Return absolute path to fixture file, generating it if it doesn't exist."""
     path = FIXTURES_DIR / filename

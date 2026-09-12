@@ -18,13 +18,17 @@ CONFIDENCE_THRESHOLD = 0.80  # Strict: score < 0.80 is marked as low confidence
 
 # File upload constraints
 MAX_UPLOAD_SIZE = 15 * 1024 * 1024  # 15 MB
-ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp"}
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp", ".csv", ".json", ".md"}
 ALLOWED_MIME_TYPES = {
     "image/png",
     "image/jpeg",
     "image/tiff",
     "image/bmp",
     "image/webp",
+    "text/csv",
+    "application/json",
+    "text/markdown",
+    "text/plain",  # Often browsers send md/csv as text/plain
 }
 
 # OCR Engine configuration

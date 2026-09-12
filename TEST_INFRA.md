@@ -1,57 +1,66 @@
-# Test Infrastructure & E2E Validation Framework
+# Test Infrastructure & E2E Validation Framework: Batch Multi-Row Tabular OCR
 
 **Project**: Loan Easier (OCR-Based Loan Data Entry System)  
-**Author**: `test_writer_1` (E2E Test Engineer)  
-**Status**: ACTIVE & COMPLETE  
+**Author**: `test_writer_e2e_2` (E2E Test Writer)  
+**Version**: 2.0.0  
+**Status**: ACTIVE & COMPLETE (Tiers 1-4 Ready)  
 **Integrity Mode**: Benchmark / Production  
 
 ---
 
-## 1. Overview & Dual-Track Methodology
+## 1. Overview & Multi-Tier Testing Architecture
 
-The test suite employs an **opaque-box, contract-driven dual-track testing methodology**. Tests are engineered strictly against the authoritative specifications defined in `ORIGINAL_REQUEST.md` and the architecture contracts in `PROJECT.md`.
+The test infrastructure validates the **Batch Multi-Row Tabular OCR and Human-in-the-Loop (HITL) Data Grid** system across 4 distinct testing tiers. Tests are engineered strictly against the authoritative requirements in `ORIGINAL_REQUEST.md` (Update 2026-09-12T06:42:29Z) and the architectural specifications in `PROJECT.md`.
 
-Key architectural principles:
-- **Opaque-Box Verification**: Tests validate the system primarily through HTTP endpoints via `fastapi.testclient.TestClient` and documented module interfaces (`DualOCREngine`, `LoanRepository`, `PDFGenerator`, `CSVExporter`).
-- **Complete Test Isolation**: Each test operates in an ephemeral sandbox. SQLite databases are instantiated in pytest `tmp_path` fixtures, preventing data collision or side effects across runs.
-- **Zero External Network Dependencies**: Deterministic synthetic mock images are generated locally using Pillow (`PIL`), simulating high-contrast loan documents, low-confidence documents, and corrupted streams without live cloud dependencies.
-- **Strict Error and Fallback Verification**: Fault injection simulates Google Cloud Vision API quota limits (HTTP 429), timeouts, auth errors, and configuration switches (`OCR_FORCE_FALLBACK=true`), verifying that the Tesseract fallback engine activates and logs telemetry.
+### The 4 Testing Tiers:
+- **Tier 1: Unit & Spatial Parser Contracts**: Validates 2D token normalization, table boundary detection, row clustering, horizontal column partitioning, cell confidence normalization in `[0.00, 1.00]`, and Bengali numeral translation (`০-৯` to `0-9`).
+- **Tier 2: Component & Dual OCR Integration**: Validates tabular batch extraction failover between primary GCP Vision and Tesseract, preserving full execution telemetry (`fallback_triggered`, `fallback_reason`, `engine_name`).
+- **Tier 3: E2E Acceptance Criteria (AC1, AC2, AC3)**:
+  - **AC1** (`tests/test_ac1_tabular_extraction.py`): Tabular document image upload (3+ rows) verifying backend returns an array of structured records.
+  - **AC2** (`tests/test_ac2_grid_save.py`): In-grid cell modification and atomic SQLite batch save/verification (`BEGIN IMMEDIATE ... COMMIT;` with rollback).
+  - **AC3** (`tests/test_ac3_batch_csv.py`): Streamed batch CSV export matching table data with RFC 4180 compliance, UTF-8 BOM encoding for Bengali, and summary total row.
+- **Tier 4: Boundary, Capacity & Adversarial Stress**: Validates 100 rows maximum batch capacity, exhaustive Bengali numeral conversion matrices, Bengali column header synonyms, strict `< 0.80` cell threshold boundaries, and multi-format exports (Excel `.xlsx`, Combined PDF, ZIP archive).
 
 ---
 
 ## 2. Acceptance Criteria & Test Matrix
 
-| Acceptance Criteria | Test Module | Test Functions | Scope & Assertions |
+| Criteria / Tier | Test Module | Test Functions | Scope & Assertions |
 |---|---|---|---|
-| **AC1: Document Ingestion & Form Population** | `tests/test_ac1_ingestion_form.py` | `test_upload_mock_image_e2e_success`<br>`test_form_retrieval_matches_uploaded_data`<br>`test_jpeg_format_ingestion_success`<br>`test_ocr_field_parser_contract` | Verifies multipart image upload (`POST /api/documents/upload`), field extraction (`serial_number`, `name`, `mobile`, `address`, `amount`), and normalized confidence scores in `[0.00, 1.00]`. |
-| **AC2: Form Modification & Persistence** | `tests/test_ac2_verification_save.py` | `test_modify_fields_and_verify_e2e_persistence`<br>`test_subsequent_get_reflects_updated_data`<br>`test_repository_atomic_update_and_verify` | Verifies HITL edits (`POST /api/loans/{id}/verify`), atomic persistence to SQLite, `verified=True` status, and ISO timestamp audit trail. |
-| **AC3: Dual OCR Fallback Mechanism** | `tests/test_ac3_ocr_fallback.py` | `test_gcp_quota_exceeded_triggers_tesseract_fallback`<br>`test_gcp_connection_error_triggers_tesseract_fallback`<br>`test_gcp_auth_error_triggers_tesseract_fallback`<br>`test_force_fallback_configuration_flag`<br>`test_e2e_upload_with_ocr_force_fallback_env`<br>`test_both_engines_failing_raises_error` | Simulates GCP failures (quota 429, timeouts, credentials), confirms automatic failover to Tesseract, and verifies telemetry (`fallback_triggered=True`, `engine_name='tesseract'`). |
-| **AC4: Loan Agreement PDF Generation** | `tests/test_ac4_pdf_generation.py` | `test_generate_pdf_endpoint_e2e`<br>`test_pdf_generator_unit_contract`<br>`test_pdf_generation_escapes_special_characters`<br>`test_nonexistent_loan_pdf_returns_404` | Validates `GET /api/loans/{id}/pdf`, verifies `%PDF-` header, extracts plain text via `pypdfium2`, and ensures all verified fields are present with XML escaping. |
-| **AC5: Monthly Aggregated CSV Export** | `tests/test_ac5_csv_export.py` | `test_export_monthly_csv_e2e_valid_columns_and_format`<br>`test_rfc4180_escaping_quotes_and_commas`<br>`test_empty_monthly_csv_returns_headers_only`<br>`test_unverified_loans_excluded_from_export` | Validates `GET /api/export/csv?month=YYYY-MM`, verifies RFC 4180 compliance, header columns, data rows, quotes/commas escaping, and exclusion of draft records. |
-| **Edge Cases & Boundaries** | `tests/test_edge_cases.py` | `test_zero_byte_upload_rejection`<br>`test_invalid_mime_type_rejection`<br>`test_corrupted_image_rejection`<br>`test_low_confidence_threshold_detection_boundary`<br>`test_low_confidence_fixture_detection_e2e`<br>`test_duplicate_serial_number_handling`<br>`test_negative_loan_amount_rejected` | Tests 0-byte upload rejection (HTTP 400/422), invalid MIME types (HTTP 415/422), corrupted files, strict `< 0.80` boundary evaluation, empty month exports, duplicate serials, and negative amounts. |
-| **Dual OCR Engine Core** | `tests/test_dual_engine.py` | `test_dual_engine_primary_success`<br>`test_dual_engine_quota_failover`<br>`test_dual_engine_forced_fallback`<br>`test_dual_engine_all_fail` | Unit tests for DualOCREngine state transitions, failover triggers, and exception cascades. |
-| **SQLite Persistence Core** | `tests/test_persistence.py` | `test_create_and_get_loan`<br>`test_update_and_verify`<br>`test_list_loans_by_month` | Unit tests for SQLite WAL transactions, serial lookups, and monthly queries. |
+| **AC1: Tabular Extraction (3+ rows)** | `tests/test_ac1_tabular_extraction.py` | `test_mock_tabular_image_generation_3_plus_rows`<br>`test_spatial_table_extractor_contract_3_rows`<br>`test_tabular_parser_with_bengali_text_lines`<br>`test_low_confidence_cell_flagging_in_batch`<br>`test_ac1_upload_tabular_image_e2e` | Uploads mock tabular image with 3+ rows (`POST /api/documents/upload`), verifies backend returns an array of records with `serial_number`, `name`, `mobile`, `address`, `amount`, normalized cell confidences in `[0.00, 1.00]`, and draft status. |
+| **AC2: Data Grid Save & Atomic DB** | `tests/test_ac2_grid_save.py` | `test_grid_cell_edit_state_transition_contract`<br>`test_sqlite_atomic_transaction_rollback_guarantee`<br>`test_dynamic_row_add_and_delete_in_grid_payload`<br>`test_ac2_modify_cell_and_verify_atomic_persistence_e2e` | Simulates inline cell edit in mock data grid, verifies all rows are committed atomically to SQLite with `verified = True` and ISO timestamp. Injects constraint violations to guarantee zero partial commits on failure (`ROLLBACK;`). |
+| **AC3: Batch CSV Export Match** | `tests/test_ac3_batch_csv.py` | `test_batch_csv_utf8_bom_and_rfc4180_encoding_contract`<br>`test_batch_csv_rfc4180_escaping_adversarial`<br>`test_batch_csv_summary_total_calculation`<br>`test_ac3_export_batch_csv_matches_table_data_e2e` | Requests `GET /api/export/batch/{batch_id}/csv`, parses via `csv.reader`, verifies UTF-8 BOM (`\xef\xbb\xbf`), matches all columns and cell edits with table data, and verifies summary total row. |
+| **Tier 4: Stress & Boundaries** | `tests/test_tabular_stress_boundaries.py` | `test_tabular_100_rows_maximum_capacity_stress`<br>`test_bengali_numeral_exhaustive_translation_matrix`<br>`test_bengali_column_headers_exhaustive_synonyms`<br>`test_low_confidence_cell_thresholding_strict_boundary`<br>`test_batch_excel_export_format_contract`<br>`test_batch_combined_pdf_export_contract`<br>`test_batch_zip_archive_export_contract` | Validates 100 rows batch capacity under 3.0s, exhaustive Bengali numeral conversion (`০-৯` -> `0-9`), Bengali header synonyms (`ক্রমিক নং`, `নাম`, `মোবাইল`, `ঠিকানা`, `পরিমাণ`), strict `< 0.80` boundary evaluation, and export format resilience. |
+| **Single-Form Ingestion (Legacy AC1)** | `tests/test_ac1_ingestion_form.py` | Full suite (4 tests) | Preserves backwards compatibility for single-record image uploads and field parsers. |
+| **Single-Form Verification (Legacy AC2)** | `tests/test_ac2_verification_save.py` | Full suite (3 tests) | Preserves single-record verification persistence via `POST /api/loans/{id}/verify`. |
+| **OCR Failover (Legacy AC3)** | `tests/test_ac3_ocr_fallback.py` | Full suite (6 tests) | Simulates GCP failures (quota 429, timeouts, credentials) triggering Tesseract fallback. |
+| **Single-Loan PDF (Legacy AC4)** | `tests/test_ac4_pdf_generation.py` | Full suite (4 tests) | Validates single-loan agreement PDF generation and entity escaping. |
+| **Monthly CSV Export (Legacy AC5)** | `tests/test_ac5_csv_export.py` | Full suite (4 tests) | Validates monthly aggregated CSV export `GET /api/export/csv?month=YYYY-MM`. |
+| **Adversarial & Edge Cases** | `tests/test_edge_cases.py` | Full suite (7 tests) | Validates 0-byte uploads, corrupted streams, invalid MIME types, negative amounts. |
+| **Dual Engine Tabular** | `tests/test_dual_engine.py` | Full suite (11 tests) | Validates primary, failover, forced fallback, and tabular mock extraction. |
+| **Concurrency & Stress** | `tests/test_stress_scenarios.py` | Full suite (20 tests) | High concurrency stress, truncated byte payloads, and WAL race condition checks. |
+| **Export Integrity** | `tests/test_challenger_export_integrity.py` | Full suite (18 tests) | Validates RFC 4180 escaping, financial totals, and leap-year boundaries. |
 
 ---
 
-## 3. Test Fixture Architecture (`tests/fixtures/`)
+## 3. Test Fixture Architecture (`tests/mock_tabular_fixtures.py` & `tests/fixtures/`)
 
-Synthetic mock documents are generated dynamically and stored in `tests/fixtures/`:
-1. **`clean_loan_document.png`**: High-contrast, clean 800x1000 PNG image containing full promissory agreement text, standard serial number (`LN-2026-9042`), name (`Jane Doe`), phone (`+1-555-234-5678`), address (`742 Evergreen Terrace`), and principal amount (`$25,000.00`).
-2. **`clean_loan_document.jpg`**: JPEG version for format compatibility validation.
-3. **`low_confidence_document.png`**: Rendered with `#F0F0F0` background to trigger low-confidence OCR simulation (`confidence < 0.80` on mobile/address) for HITL highlighting tests.
-4. **`empty_file.png`**: 0-byte binary file for upload boundary testing.
-5. **`invalid_file.txt`**: Plain text file pretending to be an image to verify MIME and magic bytes validation.
-6. **`corrupted_image.png`**: PNG magic header followed by corrupt binary stream.
+1. **`create_mock_tabular_image(rows_data, headers, ...)`**: Generates high-resolution tabular document images with grid lines, Bengali headers (`ক্রমিক নং`, `নাম`, `মোবাইল`, `ঠিকানা`, `পরিমাণ`), and structured rows (scaling from 3 up to 100 rows).
+2. **`get_tabular_image_bytes(num_rows, is_low_conf)`**: Returns binary bytes of synthetic tabular images for upload simulation.
+3. **`generate_mock_tabular_tokens(num_rows, low_conf_row, base_conf)`**: Generates realistic 2D OCR word tokens with bounding boxes `(text, x, y, w, h, confidence)` for spatial extractor validation.
+4. **`tabular_loan_document_3rows.png`**: Standard 3-row tabular document fixture persisted on disk.
+5. **`tabular_loan_document_low_conf.png`**: Tabular fixture with background `#F0F0F0` and blurred cell triggering low confidence (`< 0.80`) on Row 2 mobile.
 
 ---
 
-## 4. Pytest Configuration & Test Runner (`tests/conftest.py`)
+## 4. Pytest Configuration & Fixtures (`tests/conftest.py`)
 
-- **Session Setup**: Automatically initializes fixtures in `tests/fixtures/` before running any test.
-- **Isolated DB (`temp_db_path`)**: Creates a fresh SQLite database in pytest's temporary directory for every test invoking `loan_repo` or `client`.
-- **Monkeypatching**: Seamlessly redirects `src.config.DB_PATH` and `src.db.repository.DB_PATH` to the isolated temporary database.
-- **Test Client (`client`)**: Instantiates `fastapi.testclient.TestClient(app)` wrapped in a context manager for fast synchronous HTTP testing.
+- **`mock_tabular_3rows_bytes`**: Fixture providing raw binary bytes of a 3-row tabular image.
+- **`mock_tabular_low_conf_bytes`**: Fixture providing bytes of a tabular image with low-confidence cells.
+- **`sample_tabular_data`**: Fixture returning standardized 3-row tabular loan dictionaries.
+- **`temp_db_path`**: Ephemeral SQLite database sandbox per test in `tmp_path`.
+- **`loan_repo`**: Isolated `LoanRepository` pointing to the ephemeral SQLite database.
+- **`client`**: Synchronous FastAPI `TestClient` wrapped in context manager.
 
 ---
 
@@ -59,31 +68,25 @@ Synthetic mock documents are generated dynamically and stored in `tests/fixtures
 
 ### Run Full Test Suite
 ```powershell
-python -m pytest tests/ -v
+python -m pytest -v
 ```
 
-### Run Specific Acceptance Criteria
+### Run Batch Tabular E2E Acceptance Criteria
 ```powershell
-# Run AC1 (Ingestion & Form Population)
-python -m pytest tests/test_ac1_ingestion_form.py -v
+# AC1: Tabular OCR Batch Extraction (3+ rows)
+python -m pytest tests/test_ac1_tabular_extraction.py -v
 
-# Run AC2 (Form Modification & SQLite Persistence)
-python -m pytest tests/test_ac2_verification_save.py -v
+# AC2: Data Grid Cell Modification & Atomic Save
+python -m pytest tests/test_ac2_grid_save.py -v
 
-# Run AC3 (Dual OCR Fallback & Telemetry)
-python -m pytest tests/test_ac3_ocr_fallback.py -v
+# AC3: Batch CSV Export Matches Table Data
+python -m pytest tests/test_ac3_batch_csv.py -v
 
-# Run AC4 (PDF Generation & Field Verification)
-python -m pytest tests/test_ac4_pdf_generation.py -v
-
-# Run AC5 (Monthly CSV Export & RFC 4180)
-python -m pytest tests/test_ac5_csv_export.py -v
-
-# Run Edge Cases & Boundary Scenarios
-python -m pytest tests/test_edge_cases.py -v
+# Tier 4: 100 Rows Stress, Bengali Numerals, Low Confidence
+python -m pytest tests/test_tabular_stress_boundaries.py -v
 ```
 
-### Run with Short Tracebacks and Detailed Summaries
+### Run All Tabular Tests Together
 ```powershell
-python -m pytest -q --tb=short
+python -m pytest tests/test_ac1_tabular_extraction.py tests/test_ac2_grid_save.py tests/test_ac3_batch_csv.py tests/test_tabular_stress_boundaries.py -v
 ```

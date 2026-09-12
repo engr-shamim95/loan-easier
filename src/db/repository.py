@@ -8,7 +8,13 @@ import sqlite3
 
 from src.config import DB_PATH
 from src.db.connection import get_connection
-from src.db.models import LoanCreate, LoanRecord, LoanUpdate, VerificationPayload
+from src.db.models import (
+    LoanCreate,
+    LoanRecord,
+    LoanUpdate,
+    VerificationPayload,
+    BatchVerificationRow,
+)
 from src.db.schema import init_db
 
 class LoanRepository:
@@ -66,17 +72,21 @@ class LoanRepository:
             cursor.execute(
                 """
                 INSERT INTO loans (
+                    batch_id, row_index, project_type,
                     serial_number, name, mobile, address, amount,
                     image_path, raw_ocr_data, confidences, ocr_engine_used,
                     verified, verified_at, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
+                    loan.batch_id,
+                    loan.row_index,
+                    loan.project_type,
                     loan.serial_number,
                     loan.name,
                     loan.mobile,
-                    loan.address or "",
-                    float(loan.amount),
+                    loan.address,
+                    loan.amount,
                     loan.image_path,
                     raw_ocr_json,
                     confidences_json,
@@ -162,7 +172,18 @@ class LoanRepository:
             elif key == "verified":
                 fields.append("verified = ?")
                 values.append(1 if val else 0)
-            elif key in ("serial_number", "name", "mobile", "address", "amount", "image_path", "ocr_engine_used", "verified_at"):
+            elif key in (
+                "serial_number",
+                "name",
+                "mobile",
+                "address",
+                "amount",
+                "image_path",
+                "ocr_engine_used",
+                "verified_at",
+                "batch_id",
+                "row_index",
+            ):
                 fields.append(f"{key} = ?")
                 values.append(float(val) if key == "amount" else val)
 
@@ -239,34 +260,29 @@ class LoanRepository:
         finally:
             self._close_conn(conn)
 
-    def list_loans_by_month(self, year_month: str, verified_only: bool = True) -> List[LoanRecord]:
+    def list_loans_by_month(self, year_month: str, verified_only: bool = True, project_type: Optional[str] = None) -> List[LoanRecord]:
         """
-        List loans filtered by year-month string ('YYYY-MM').
+        List loans filtered by year-month string ('YYYY-MM') and optionally project_type.
         Matches either created_at or verified_at.
         """
         conn = self._get_conn()
         try:
             cursor = conn.cursor()
             prefix = f"{year_month}%"
+            
+            query = "SELECT * FROM loans WHERE (created_at LIKE ? OR verified_at LIKE ?)"
+            params = [prefix, prefix]
+            
             if verified_only:
-                cursor.execute(
-                    """
-                    SELECT * FROM loans
-                    WHERE verified = 1
-                      AND (created_at LIKE ? OR verified_at LIKE ?)
-                    ORDER BY id ASC
-                    """,
-                    (prefix, prefix),
-                )
-            else:
-                cursor.execute(
-                    """
-                    SELECT * FROM loans
-                    WHERE created_at LIKE ? OR verified_at LIKE ?
-                    ORDER BY id ASC
-                    """,
-                    (prefix, prefix),
-                )
+                query += " AND verified = 1"
+            
+            if project_type:
+                query += " AND project_type = ?"
+                params.append(project_type)
+                
+            query += " ORDER BY id ASC"
+            
+            cursor.execute(query, tuple(params))
             rows = cursor.fetchall()
             cursor.close()
             return [LoanRecord(**self._row_to_dict(r)) for r in rows]
@@ -292,3 +308,222 @@ class LoanRepository:
             raise
         finally:
             self._close_conn(conn)
+
+    def get_batch_loans(self, batch_id: str) -> List[LoanRecord]:
+        """Fetch all loan records belonging to a specific batch, ordered by row_index."""
+        conn = self._get_conn()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM loans WHERE batch_id = ? ORDER BY row_index ASC, id ASC",
+                (batch_id,),
+            )
+            rows = cursor.fetchall()
+            cursor.close()
+            return [LoanRecord(**self._row_to_dict(r)) for r in rows]
+        finally:
+            self._close_conn(conn)
+
+    def create_batch_loans(self, batch_id: str, rows: List[LoanCreate]) -> List[LoanRecord]:
+        """Atomically insert an initial batch of draft loan records."""
+        now = datetime.now(timezone.utc).isoformat()
+        conn = self._get_conn()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            cursor = conn.cursor()
+            for idx, loan in enumerate(rows, start=1):
+                confidences_json = json.dumps(loan.confidences or {})
+                raw_ocr_json = json.dumps(loan.raw_ocr_data) if loan.raw_ocr_data is not None else None
+                verified_int = 1 if loan.verified else 0
+                row_idx = loan.row_index if loan.row_index is not None else idx
+                cursor.execute(
+                    """
+                    INSERT INTO loans (
+                        batch_id, row_index, serial_number, name, mobile, address, amount,
+                        image_path, raw_ocr_data, confidences, ocr_engine_used,
+                        verified, verified_at, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        batch_id,
+                        row_idx,
+                        loan.serial_number,
+                        loan.name,
+                        loan.mobile,
+                        loan.address or "",
+                        float(loan.amount),
+                        loan.image_path,
+                        raw_ocr_json,
+                        confidences_json,
+                        loan.ocr_engine_used,
+                        verified_int,
+                        loan.verified_at,
+                        now,
+                        now,
+                    ),
+                )
+            conn.execute("COMMIT;")
+            cursor.close()
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
+        finally:
+            self._close_conn(conn)
+
+        return self.get_batch_loans(batch_id)
+
+    def save_and_verify_batch(
+        self,
+        batch_id: str,
+        rows: List[Union[Dict[str, Any], Any]],
+        deleted_ids: Optional[List[int]] = None,
+    ) -> List[LoanRecord]:
+        """
+        Atomically save and verify all rows in a batch inside a single SQLite transaction.
+        Uses BEGIN IMMEDIATE ... COMMIT; with rollback on constraint violations or errors.
+        """
+        now = datetime.now(timezone.utc).isoformat()
+        conn = self._get_conn()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            cursor = conn.cursor()
+
+            # Handle deletions if requested
+            if deleted_ids:
+                for del_id in deleted_ids:
+                    cursor.execute(
+                        "DELETE FROM loans WHERE id = ? AND (batch_id = ? OR batch_id IS NULL)",
+                        (del_id, batch_id),
+                    )
+
+            # Process rows
+            for idx, r in enumerate(rows, start=1):
+                if hasattr(r, "model_dump"):
+                    row_data = r.model_dump()
+                elif isinstance(r, dict):
+                    row_data = r
+                else:
+                    row_data = dict(r)
+
+                row_idx = row_data.get("row_index") or idx
+                serial = str(row_data.get("serial_number") or f"LN-{batch_id[-4:]}-{row_idx:03d}")
+                name = str(row_data.get("name") or row_data.get("borrower_name") or "")
+                mobile = str(row_data.get("mobile") or row_data.get("mobile_number") or "")
+                address = str(row_data.get("address") or "")
+                raw_amount = row_data.get("amount") if "amount" in row_data else row_data.get("loan_amount")
+                if raw_amount is None:
+                    raise sqlite3.IntegrityError(f"Missing loan amount for row {row_idx}")
+
+                try:
+                    amount = float(raw_amount)
+                except (ValueError, TypeError) as exc:
+                    raise sqlite3.IntegrityError(f"Invalid amount for row {row_idx}: {raw_amount}") from exc
+
+                # Constraint check: amount must be > 0
+                if amount <= 0:
+                    raise sqlite3.IntegrityError(
+                        f"Constraint check failed: amount must be positive for row {row_idx}, got {amount}"
+                    )
+
+                record_id = row_data.get("id") or row_data.get("loan_id")
+                confidences = row_data.get("confidences") or {}
+                conf_json = json.dumps(confidences) if isinstance(confidences, dict) else str(confidences)
+                ocr_engine = str(row_data.get("ocr_engine_used") or "batch_grid")
+                image_path = row_data.get("image_path")
+
+                project_type = str(row_data.get("project_type") or "loan")
+                
+                # Check if record already exists in DB
+                existing_id = None
+                if record_id:
+                    cursor.execute("SELECT id FROM loans WHERE id = ?", (record_id,))
+                    row_match = cursor.fetchone()
+                    if row_match:
+                        existing_id = row_match[0]
+
+                if not existing_id:
+                    # Check by batch_id and row_index or serial_number
+                    cursor.execute(
+                        "SELECT id FROM loans WHERE batch_id = ? AND (row_index = ? OR serial_number = ?)",
+                        (batch_id, row_idx, serial),
+                    )
+                    row_match = cursor.fetchone()
+                    if row_match:
+                        existing_id = row_match[0]
+
+                if existing_id:
+                    cursor.execute(
+                        """
+                        UPDATE loans SET
+                            batch_id = ?,
+                            row_index = ?,
+                            project_type = ?,
+                            serial_number = ?,
+                            name = ?,
+                            mobile = ?,
+                            address = ?,
+                            amount = ?,
+                            confidences = ?,
+                            verified = 1,
+                            verified_at = ?,
+                            updated_at = ?
+                        WHERE id = ?
+                        """,
+                        (
+                            batch_id,
+                            row_idx,
+                            project_type,
+                            serial,
+                            name,
+                            mobile,
+                            address,
+                            amount,
+                            conf_json,
+                            now,
+                            now,
+                            existing_id,
+                        ),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        INSERT INTO loans (
+                            batch_id, row_index, project_type, serial_number, name, mobile, address, amount,
+                            image_path, confidences, ocr_engine_used,
+                            verified, verified_at, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+                        """,
+                        (
+                            batch_id,
+                            row_idx,
+                            project_type,
+                            serial,
+                            name,
+                            mobile,
+                            address,
+                            amount,
+                            image_path,
+                            conf_json,
+                            ocr_engine,
+                            now,
+                            now,
+                            now,
+                        ),
+                    )
+
+            conn.execute("COMMIT;")
+            cursor.close()
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
+        finally:
+            self._close_conn(conn)
+
+        return self.get_batch_loans(batch_id)
+

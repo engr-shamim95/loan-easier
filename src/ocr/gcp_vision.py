@@ -8,8 +8,20 @@ from typing import Any, Dict, Optional
 from PIL import Image
 
 from src.config import OCR_FORCE_FALLBACK, OCR_MOCK_MODE
-from src.ocr.base import BaseOCREngine, OCRResult, GCPQuotaExceededError, GCPConnectionError, GCPAuthError
-from src.ocr.parser import parse_loan_fields
+from src.ocr.base import (
+    BaseOCREngine,
+    OCRResult,
+    BatchOCRResult,
+    GCPQuotaExceededError,
+    GCPConnectionError,
+    GCPAuthError,
+)
+from src.ocr.parser import (
+    parse_loan_fields,
+    TableSpatialExtractor,
+    OCRToken,
+    generate_mock_tabular_tokens,
+)
 
 logger = logging.getLogger("loan_ocr.gcp_vision")
 
@@ -27,7 +39,7 @@ class GCPVisionEngine(BaseOCREngine):
     ) -> None:
         self.credentials_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         self.force_failure = force_failure or OCR_FORCE_FALLBACK or (os.getenv("OCR_FORCE_GCP_FAILURE", "").lower() in ("true", "1"))
-        self.mock_mode = mock_mode if mock_mode is not None else (OCR_MOCK_MODE or not self._has_valid_credentials())
+        self.mock_mode = mock_mode if mock_mode is not None else OCR_MOCK_MODE
         self._client = None
 
     @property
@@ -53,8 +65,11 @@ class GCPVisionEngine(BaseOCREngine):
                 else:
                     self._client = vision.ImageAnnotatorClient()
             except Exception as e:
-                logger.warning(f"Failed to initialize live GCP Vision client: {e}. Falling back to simulation.")
-                self.mock_mode = True
+                if OCR_MOCK_MODE:
+                    logger.warning(f"Failed to initialize live GCP Vision client: {e}. Falling back to simulation.")
+                    self.mock_mode = True
+                else:
+                    raise GCPAuthError(f"GCP Vision auth error: {e}")
 
     def extract(self, image_bytes: bytes) -> OCRResult:
         """Extract text and loan fields from image bytes."""
@@ -114,9 +129,15 @@ class GCPVisionEngine(BaseOCREngine):
             except (GCPQuotaExceededError, GCPAuthError, GCPConnectionError):
                 raise
             except Exception as e:
-                logger.warning(f"Live GCP call failed with {e}. Using structured simulation.")
+                if OCR_MOCK_MODE:
+                    logger.warning(f"Live GCP call failed with {e}. Using structured simulation.")
+                else:
+                    raise
 
         # Structured simulation mode for offline/test environments
+        if not self.mock_mode and not OCR_MOCK_MODE:
+            raise Exception("GCP Vision failed and mock mode is disabled.")
+            
         raw_text, base_confidences = self._simulate_extraction(pil_img)
         values, confidences = parse_loan_fields(raw_text, token_confidences=base_confidences, base_engine_confidence=0.96)
         execution_time = (time.perf_counter() - start_time) * 1000
@@ -184,3 +205,123 @@ class GCPVisionEngine(BaseOCREngine):
             }
 
         return raw_text, token_confidences
+
+    def extract_tabular(
+        self,
+        image_bytes: bytes,
+        num_mock_rows: Optional[int] = None,
+        batch_id: Optional[str] = None,
+    ) -> BatchOCRResult:
+        """
+        Extract tabular batch of loan records from image bytes.
+        Extracts 2D word tokens and bounding boxes and feeds them to TableSpatialExtractor.
+        Supports deterministic mock simulation for offline testing up to 100 rows.
+        """
+        start_time = time.perf_counter()
+
+        if self.force_failure or os.getenv("OCR_FORCE_FALLBACK", "").lower() in ("true", "1") or os.getenv("OCR_FORCE_GCP_FAILURE", "").lower() in ("true", "1"):
+            logger.warning("Simulated GCP Vision quota exceeded triggered.")
+            raise GCPQuotaExceededError("Google Cloud Vision API quota limit exceeded (HTTP 429 ResourceExhausted)")
+
+        if not image_bytes or len(image_bytes) == 0:
+            raise ValueError("Uploaded image bytes are empty")
+
+        try:
+            pil_img = Image.open(io.BytesIO(image_bytes))
+            pil_img.verify()
+            pil_img = Image.open(io.BytesIO(image_bytes))
+        except Exception as e:
+            raise ValueError(f"Invalid or corrupted image format: {e}")
+
+        # If live client is configured and not in mock mode, attempt real GCP Vision call
+        if not self.mock_mode:
+            try:
+                self._init_client()
+                if self._client:
+                    from google.cloud import vision
+                    image = vision.Image(content=image_bytes)
+                    response = self._client.document_text_detection(image=image)
+
+                    if response.error.message:
+                        if "quota" in response.error.message.lower() or "429" in response.error.message:
+                            raise GCPQuotaExceededError(f"GCP Vision error: {response.error.message}")
+                        elif "auth" in response.error.message.lower() or "permission" in response.error.message.lower():
+                            raise GCPAuthError(f"GCP Vision auth error: {response.error.message}")
+                        else:
+                            raise GCPConnectionError(f"GCP Vision error: {response.error.message}")
+
+                    tokens: List[OCRToken] = []
+                    if response.full_text_annotation:
+                        for page in response.full_text_annotation.pages:
+                            for block in page.blocks:
+                                for paragraph in block.paragraphs:
+                                    for word in paragraph.words:
+                                        w_text = "".join(s.text for s in word.symbols)
+                                        verts = word.bounding_box.vertices
+                                        xs = [v.x for v in verts if v.x is not None]
+                                        ys = [v.y for v in verts if v.y is not None]
+                                        if xs and ys:
+                                            x_min, x_max = min(xs), max(xs)
+                                            y_min, y_max = min(ys), max(ys)
+                                            conf = word.confidence if word.confidence is not None else 0.90
+                                            tokens.append(OCRToken(
+                                                text=w_text,
+                                                x=x_min,
+                                                y=y_min,
+                                                w=x_max - x_min,
+                                                h=y_max - y_min,
+                                                confidence=float(conf),
+                                            ))
+
+                    raw_text = response.full_text_annotation.text if response.full_text_annotation else ""
+                    extractor = TableSpatialExtractor(batch_id=batch_id, engine_name=self.name)
+                    batch_res = extractor.extract(tokens=tokens, raw_text=raw_text)
+                    batch_res.execution_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
+                    batch_res.engine_name = self.name
+                    batch_res.raw_ocr_data = {"pages_detected": len(response.full_text_annotation.pages) if response.full_text_annotation else 0}
+                    if batch_res.total_rows > 0:
+                        return batch_res
+            except (GCPQuotaExceededError, GCPAuthError, GCPConnectionError):
+                raise
+            except Exception as e:
+                if OCR_MOCK_MODE:
+                    logger.warning(f"Live GCP tabular call failed with {e}. Using structured simulation.")
+                else:
+                    raise
+
+        # Structured deterministic mock simulation for offline testing
+        if not self.mock_mode and not OCR_MOCK_MODE:
+            raise Exception("GCP Vision failed and mock mode is disabled.")
+            
+        corner_pixel = pil_img.getpixel((0, 0)) if pil_img.size[0] > 0 and pil_img.size[1] > 0 else (255, 255, 255)
+        is_low_conf = False
+        if isinstance(corner_pixel, tuple) and len(corner_pixel) >= 3:
+            if corner_pixel[0] == 240 and corner_pixel[1] == 240 and corner_pixel[2] == 240:
+                is_low_conf = True
+
+        low_conf_row = 2 if is_low_conf else None
+
+        if num_mock_rows is not None:
+            sim_rows = max(1, min(100, int(num_mock_rows)))
+        else:
+            # Estimate from image dimensions
+            h = pil_img.height
+            if h >= 3000:
+                sim_rows = 100
+            elif h >= 250:
+                estimated = (h - 150) // 38 - 1
+                sim_rows = max(3, min(100, estimated))
+            else:
+                sim_rows = 3
+
+        tokens = generate_mock_tabular_tokens(num_rows=sim_rows, low_conf_row=low_conf_row, base_conf=0.96)
+        extractor = TableSpatialExtractor(batch_id=batch_id, engine_name=self.name)
+        batch_res = extractor.extract_from_tokens(tokens)
+        batch_res.execution_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        batch_res.engine_name = self.name
+        batch_res.raw_ocr_data = {"simulation": True, "image_size": pil_img.size, "image_mode": pil_img.mode}
+        return batch_res
+
+    def extract_batch(self, image_bytes: bytes) -> BatchOCRResult:
+        """Alias for extract_tabular adhering to BaseOCREngine contract."""
+        return self.extract_tabular(image_bytes)

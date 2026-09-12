@@ -1,0 +1,469 @@
+
+/* --- NEW BLOCK --- */
+
+/* --- NEW BLOCK --- */
+/* ==========================================================================
+   Tabular Batch Data Grid & Dual Mode UI Styles
+   ========================================================================== */
+
+/* Sample Tabular Button in Navbar */
+.btn-sample-tabular {
+    background: linear-gradient(135deg, #059669, #0d9488);
+    color: #ffffff !important;
+    border: none;
+    font-weight: 600;
+}
+
+.btn-sample-tabular:hover {
+    background: linear-gradient(135deg, #047857, #0f766e);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Dual Mode Tabs */
+.view-mode-tabs {
+    display: inline-flex;
+    background-color: var(--neutral-100);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    gap: 3px;
+}
+
+.view-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--neutral-600);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.view-tab:hover {
+    color: var(--neutral-900);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.view-tab.active {
+    color: var(--primary);
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tab-counter-badge {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    background: var(--neutral-200);
+    color: var(--neutral-700);
+    border-radius: var(--radius-full);
+    font-family: var(--font-mono);
+}
+
+.view-tab.active .tab-counter-badge {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* Mode View Panes */
+.mode-view-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Batch Summary Cards */
+.batch-status-banner {
+    margin-bottom: 1rem;
+}
+
+.batch-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.summary-metric-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.6rem 0.85rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.metric-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--neutral-500);
+    letter-spacing: 0.03em;
+    margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.metric-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+}
+
+.text-primary {
+    color: var(--primary) !important;
+}
+
+.text-warning {
+    color: var(--warning-hover) !important;
+}
+
+/* Grid Controls Toolbar */
+.grid-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.grid-toolbar-left {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.grid-status-info {
+    font-size: 0.8rem;
+    color: var(--neutral-500);
+    font-weight: 500;
+}
+
+/* Scrollable Table Container */
+.grid-scroll-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 440px);
+    min-height: 260px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+}
+
+.data-grid-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.825rem;
+    text-align: left;
+}
+
+.data-grid-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8fafc;
+    color: var(--neutral-700);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.65rem 0.6rem;
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.data-grid-table thead th.col-sl {
+    width: 55px;
+    text-align: center;
+}
+
+.data-grid-table thead th.col-name {
+    min-width: 160px;
+}
+
+.data-grid-table thead th.col-mobile {
+    min-width: 135px;
+}
+
+.data-grid-table thead th.col-address {
+    min-width: 180px;
+}
+
+.data-grid-table thead th.col-amount {
+    min-width: 140px;
+    text-align: right;
+}
+
+.data-grid-table thead th.col-actions {
+    width: 80px;
+    text-align: center;
+}
+
+.data-grid-table tbody tr {
+    border-bottom: 1px solid var(--neutral-200);
+    transition: background-color var(--transition-fast);
+}
+
+.data-grid-table tbody tr:hover {
+    background-color: var(--neutral-50);
+}
+
+.data-grid-table tbody td {
+    padding: 0.35rem 0.4rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.data-grid-table tbody td.col-sl-cell {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--neutral-600);
+}
+
+.data-grid-table tbody td.col-actions-cell {
+    text-align: center;
+}
+
+.data-grid-table tfoot td {
+    position: sticky;
+    bottom: 0;
+    background: #f1f5f9;
+    padding: 0.65rem 0.6rem;
+    border-top: 2px solid var(--neutral-300);
+    font-size: 0.85rem;
+    z-index: 5;
+}
+
+.tfoot-label {
+    text-align: right;
+    font-weight: 700;
+    color: var(--neutral-700);
+}
+
+.tfoot-amount {
+    text-align: right;
+    font-size: 0.95rem;
+    color: var(--primary);
+}
+
+/* Grid Cell Inputs */
+.grid-cell-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.grid-cell-input {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.825rem;
+    border: 1.5px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    background: #ffffff;
+    color: var(--neutral-800);
+    outline: none;
+    transition: all var(--transition-fast);
+}
+
+.grid-cell-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    background-color: #ffffff;
+    z-index: 2;
+}
+
+.cell-currency-symbol {
+    position: absolute;
+    left: 0.5rem;
+    color: var(--neutral-500);
+    font-weight: 600;
+    font-size: 0.8rem;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.grid-cell-input.amount-input {
+    padding-left: 1.25rem;
+    text-align: right;
+}
+
+/* Cell-Level Confidence Highlighting (< 0.80) */
+.data-grid-table tbody td.cell-low-confidence {
+    background-color: #fef2f2 !important;
+}
+
+.data-grid-table tbody td.cell-low-confidence .grid-cell-input {
+    border: 2px solid var(--danger) !important;
+    background-color: #fff5f5 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+    padding-right: 1.85rem;
+}
+
+.cell-badge-low {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    line-height: 1;
+    cursor: help;
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    background: #fee2e2;
+    border: 1px solid var(--danger-border);
+    color: var(--danger-text);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 700;
+    z-index: 4;
+}
+
+/* Cell-Level User Edited Highlighting */
+.data-grid-table tbody td.cell-edited {
+    background-color: #f0f9ff !important;
+}
+
+.data-grid-table tbody td.cell-edited .grid-cell-input {
+    border: 2px solid var(--edited) !important;
+    background-color: #f0f9ff !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+    padding-right: 1.85rem;
+}
+
+.cell-badge-edited {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    background: #e0f2fe;
+    border: 1px solid var(--edited-border);
+    color: var(--edited-text);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 4;
+}
+
+/* Delete Row Action Button */
+.btn-delete-row {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--neutral-300);
+    background: transparent;
+    color: var(--neutral-500);
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all var(--transition-fast);
+}
+
+.btn-delete-row:hover {
+    background-color: #fee2e2;
+    border-color: var(--danger-border);
+    color: var(--danger);
+    transform: scale(1.08);
+}
+
+/* Batch Action & Export Footer */
+.batch-actions-footer {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.batch-primary-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.batch-export-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    background: var(--neutral-100);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--neutral-200);
+}
+
+.export-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--neutral-600);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-right: 0.25rem;
+}
+
+/* ==========================================================================
+   Responsive Adaptations (Stack on screens <= 992px)
+   ========================================================================== */
+@media (max-width: 992px) {
+    .split-screen {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .viewer-pane {
+        height: 520px;
+    }
+
+    .form-pane {
+        height: auto;
+    }
+
+    .dropzone-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .dropzone-text {
+        text-align: center;
+    }
+
+    .navbar {
+        height: auto;
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .nav-actions {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .batch-summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

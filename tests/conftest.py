@@ -121,3 +121,21 @@ def client(temp_db_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[Tes
     from src.api.app import app
     with TestClient(app) as test_client:
         yield test_client
+
+@pytest.fixture
+def mock_tabular_3rows_bytes() -> bytes:
+    """Return binary bytes of a 3-row tabular loan image."""
+    from tests.mock_tabular_fixtures import get_tabular_image_bytes
+    return get_tabular_image_bytes(num_rows=3, is_low_conf=False)
+
+@pytest.fixture
+def mock_tabular_low_conf_bytes() -> bytes:
+    """Return binary bytes of a tabular loan image containing a low-confidence cell (<0.80)."""
+    from tests.mock_tabular_fixtures import get_tabular_image_bytes
+    return get_tabular_image_bytes(num_rows=3, is_low_conf=True)
+
+@pytest.fixture
+def sample_tabular_data():
+    """Return standard 3-row tabular loan data dictionaries."""
+    from tests.mock_tabular_fixtures import generate_tabular_loan_data
+    return generate_tabular_loan_data(num_rows=3)

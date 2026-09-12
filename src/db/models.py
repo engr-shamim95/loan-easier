@@ -1,6 +1,6 @@
 """Domain models and Pydantic schemas for loans."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import json
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
@@ -20,6 +20,9 @@ class LoanBase(BaseModel):
     mobile: str
     address: Optional[str] = ""
     amount: float
+    batch_id: Optional[str] = None
+    row_index: Optional[int] = None
+    project_type: str = "loan"
 
 class LoanCreate(LoanBase):
     """Payload for creating a new loan record (e.g. from OCR extraction)."""
@@ -37,6 +40,8 @@ class LoanUpdate(BaseModel):
     mobile: Optional[str] = None
     address: Optional[str] = None
     amount: Optional[float] = None
+    batch_id: Optional[str] = None
+    row_index: Optional[int] = None
     verified: Optional[bool] = None
     verified_at: Optional[str] = None
     confidences: Optional[Dict[str, float]] = None
@@ -48,6 +53,31 @@ class VerificationPayload(BaseModel):
     mobile: Optional[str] = None
     address: Optional[str] = None
     amount: Optional[float] = None
+
+class BatchVerificationRow(BaseModel):
+    """Schema for individual row within batch verification payload."""
+    model_config = ConfigDict(extra="allow")
+
+    id: Optional[int] = None
+    loan_id: Optional[int] = None
+    row_index: Optional[int] = None
+    project_type: Optional[str] = "loan"
+    serial_number: Optional[str] = None
+    name: Optional[str] = None
+    mobile: Optional[str] = None
+    address: Optional[str] = None
+    amount: Optional[float] = None
+    confidences: Optional[Dict[str, float]] = None
+    is_low_confidence: Optional[bool] = None
+    manually_edited: Optional[bool] = None
+
+class BatchVerificationRequest(BaseModel):
+    """Payload for submitting verified batch grid."""
+    batch_id: str
+    project_type: str = "loan"
+    records: List[Dict[str, Any]] = Field(default_factory=list)
+    rows: Optional[List[Dict[str, Any]]] = None
+    deleted_ids: Optional[List[int]] = Field(default_factory=list)
 
 class LoanRecord(LoanBase):
     """Complete persisted loan record representation."""
@@ -83,3 +113,13 @@ class LoanRecord(LoanBase):
             if "verified" in data and isinstance(data["verified"], int):
                 data["verified"] = bool(data["verified"])
         return data
+
+class BatchResponse(BaseModel):
+    """Batch verification or retrieval response."""
+    batch_id: str
+    success: bool = True
+    verified_count: int = 0
+    total_rows: int = 0
+    records: List[LoanRecord] = Field(default_factory=list)
+    image_path: Optional[str] = None
+
