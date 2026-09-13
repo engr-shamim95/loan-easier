@@ -16,7 +16,7 @@ This software is a Human-in-the-Loop (HITL) OCR-based data entry system for loan
 - **Dual OCR Pipeline:** Automatically falls back to Tesseract if GCP Vision fails (e.g., quota limits, network issues).
 - **HITL Verification Workspace:** 
   - **Single Record Form / Batch Grid:** Supports both single document verification and tabular batch processing (from CSV/JSON files).
-  - **Dynamic UI:** Intelligent upload dropzone that shrinks on successful upload, floating glassmorphism image toolbar, dropdown '⋮ Menu', sticky action footers, and automatic responsive layout stacking.
+  - **Dynamic UI:** Intelligent upload dropzone, floating glassmorphism image toolbar, dropdown '⋮ Menu', sticky action footers, automatic responsive layout stacking, and a professional **Navy Blue Theme** applied to the entire Verification Workspace.
   - **Keyboard Shortcuts:** `Ctrl+S` quick save for rapid data entry.
 - **Confidence Highlighting:** Fields with OCR confidence scores < 0.80 are visually highlighted (red/amber borders) to demand human review.
 - **Data Persistence & Export:** Saves verified records atomically. Can export individual records as PDFs and aggregated records as CSV/Excel/ZIP grouped by `project_type`.

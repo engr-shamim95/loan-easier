@@ -1760,3 +1760,122 @@ body {
     justify-content: center;
     transition: transform 0.3s ease;
 }
+
+/* ==========================================================================
+   Verification Workspace Navy Blue Theme
+   ========================================================================== */
+#form-pane {
+    background-color: #0b1c3d !important;
+    color: #e2e8f0;
+}
+
+#form-pane .pane-header {
+    background-color: #07132a !important;
+    border-bottom-color: #1e3a8a;
+}
+
+#form-pane .pane-title,
+#form-pane .metric-label,
+#form-pane .tfoot-label,
+#form-pane .grid-status-info,
+#form-pane .instruction-banner,
+#form-pane .field-label,
+#form-pane .field-hint,
+#form-pane .meta-label,
+#form-pane .telemetry-summary {
+    color: #cbd5e1;
+}
+
+#form-pane .metric-value,
+#form-pane .confidence-value {
+    color: #ffffff;
+}
+
+#form-pane .batch-summary-cards .summary-metric-card,
+#form-pane .status-banner {
+    background-color: #172554;
+    border-color: #1e3a8a;
+}
+
+#form-pane .instruction-banner {
+    background-color: #1e3a8a;
+    border-color: #1e40af;
+}
+
+#form-pane .grid-toolbar,
+#form-pane .form-actions {
+    background-color: #0b1c3d;
+    border-bottom-color: #1e3a8a;
+    border-top-color: #1e3a8a;
+}
+
+#form-pane .data-grid-table th {
+    background-color: #172554 !important;
+    color: #bfdbfe;
+    border-color: #1e3a8a;
+}
+
+#form-pane .data-grid-table td {
+    background-color: #0b1c3d !important;
+    border-color: #1e3a8a;
+}
+
+#form-pane .data-grid-table td input.grid-input,
+#form-pane .form-control {
+    background-color: #0f172a;
+    color: #ffffff;
+    border-color: #334155;
+}
+
+#form-pane .data-grid-table td input.grid-input:focus,
+#form-pane .form-control:focus {
+    background-color: #1e293b;
+    border-color: #60a5fa;
+}
+
+#form-pane .batch-actions-footer {
+    background-color: #07132a !important;
+    border-top-color: #1e3a8a;
+}
+
+#form-pane #batch-stat-amount,
+#form-pane #grid-footer-total-amount {
+    color: #60a5fa !important;
+}
+
+#form-pane .batch-export-toolbar {
+    background-color: #172554 !important;
+    border-color: #1e3a8a;
+}
+
+#form-pane .export-label {
+    color: #93c5fd;
+}
+
+/* Tabs */
+#form-pane .view-tab {
+    background-color: #0f172a;
+    color: #94a3b8;
+    border-color: #1e3a8a;
+}
+
+#form-pane .view-tab:hover {
+    background-color: #1e293b;
+    color: #cbd5e1;
+}
+
+#form-pane .view-tab.active {
+    background-color: #1d4ed8;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+#form-pane .telemetry-body {
+    background-color: #0f172a;
+    border-color: #1e3a8a;
+}
+#form-pane .raw-text-box {
+    background-color: #020617;
+    color: #38bdf8;
+    border-color: #1e3a8a;
+}
