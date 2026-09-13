@@ -1009,13 +1009,10 @@
             };
         });
 
-        // Update Project Type Selector
+        // Update Project Type
         if (data.project_type) {
-            const ptSelector = document.getElementById('project-type-selector');
-            if (ptSelector && ptSelector.value !== data.project_type) {
-                ptSelector.value = data.project_type;
-                updateLabelsForProjectType(data.project_type);
-            }
+            state.currentProjectType = data.project_type;
+            updateLabelsForProjectType(data.project_type);
         }
 
         // Store pristine copy for Reset capability
@@ -1442,7 +1439,7 @@
         const recordsPayload = state.batchRows.map((r, idx) => ({
             id: r.id,
             row_index: r.row_index || (idx + 1),
-            project_type: document.getElementById('project-type-selector') ? document.getElementById('project-type-selector').value : 'loan',
+            project_type: state.currentProjectType || 'loan',
             serial_number: r.serial_number || `LN-${idx + 1}`,
             name: r.name.trim(),
             mobile: r.mobile.trim(),
