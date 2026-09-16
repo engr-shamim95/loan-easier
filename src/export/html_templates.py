@@ -3,8 +3,10 @@ LOAN_AGREEMENT_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
+    <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/solaiman-lipi/solaiman-lipi-regular.woff2" crossorigin="anonymous">
+    <link href="https://banglawebfonts.pages.dev/css/solaiman-lipi.css" rel="stylesheet">
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 40px; color: #2D3748; font-size: 14px; }
+        body { font-family: 'Solaiman Lipi', serif; font-weight: 400; font-style: normal; margin: 40px; color: #2D3748; font-size: 14px; }
         h1 { color: #1A365D; text-align: center; font-size: 24px; margin-bottom: 5px; }
         h2 { color: #4A5568; text-align: center; font-size: 14px; font-weight: normal; font-style: italic; margin-top: 0; margin-bottom: 20px; }
         h3 { color: #2B6CB0; font-size: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 5px; margin-top: 30px; }
@@ -108,8 +110,10 @@ BATCH_SUMMARY_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
+    <link rel="preload" as="font" type="font/woff2" href="https://banglawebfonts.pages.dev/fonts/solaiman-lipi/solaiman-lipi-regular.woff2" crossorigin="anonymous">
+    <link href="https://banglawebfonts.pages.dev/css/solaiman-lipi.css" rel="stylesheet">
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 40px; color: #2D3748; font-size: 12px; }
+        body { font-family: 'Solaiman Lipi', serif; font-weight: 400; font-style: normal; margin: 40px; color: #2D3748; font-size: 12px; }
         h1 { color: #1A365D; text-align: center; font-size: 24px; margin-bottom: 5px; }
         h2 { color: #4A5568; text-align: center; font-size: 14px; font-weight: normal; margin-top: 0; margin-bottom: 20px; }
         hr { border: 0; border-top: 2px solid #2B6CB0; margin-bottom: 20px; }
