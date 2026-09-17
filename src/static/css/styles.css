@@ -1881,3 +1881,31 @@ body {
     color: #38bdf8;
     border-color: #1e3a8a;
 }
+
+/* Single Record Form Status Overrides for Navy Theme */
+#form-pane .form-group.field-low-confidence {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    border-color: #991b1b !important;
+}
+#form-pane .form-group.field-low-confidence .form-control {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+}
+
+#form-pane .form-group.field-high-confidence {
+    background-color: rgba(34, 197, 94, 0.08) !important;
+    border-color: #166534 !important;
+}
+#form-pane .form-group.field-high-confidence .form-control {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+}
+
+#form-pane .form-group.field-edited {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    border-color: #1e3a8a !important;
+}
+#form-pane .form-group.field-edited .form-control {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+}
