@@ -1909,3 +1909,9 @@ body {
     background-color: #0f172a !important;
     color: #ffffff !important;
 }
+
+#form-pane .form-content {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
