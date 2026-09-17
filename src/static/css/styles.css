@@ -1920,3 +1920,8 @@ body {
     color: #93c5fd !important;
     font-weight: 600 !important;
 }
+
+#form-pane .field-label {
+    color: #1e40af !important; /* Navy Blue requested by user */
+    font-weight: 700 !important;
+}
