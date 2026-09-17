@@ -1915,3 +1915,8 @@ body {
     border: none !important;
     box-shadow: none !important;
 }
+
+#form-pane .field-label {
+    color: #93c5fd !important;
+    font-weight: 600 !important;
+}
